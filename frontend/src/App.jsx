@@ -1,32 +1,45 @@
 import { useEffect, useState } from "react";
+import CoinCard from "./components/CoinCard.jsx";
 
 export default function App() {
   const [coins, setCoins] = useState([]);
-  const [error, setError] = useState("");
+  const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
 
-  useEffect (() => {
-    fetch("/app/coins")
-    .then((res) => {
-      if (!res.ok) throw new Error(`Request failed (HTTP ${res.status})`);
-      return res.json();
-    })
-    .then(setCoins)
-    .catch((err) => setError(err.message));
+  useEffect(() => {
+    fetch("/api/coins")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setCoins(data);
+        setStatus("ready");
+      })
+      .catch(() => setStatus("error"));
   }, []);
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", padding: 24, textAlign: "left"}}>
-      <h1>Market Dashboard</h1>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12}}>
-        {coins.map((coin) => (
-          <li key={coin.id} style={{ border: "1px solid #8884", borderRadius: 12, padding: 16 }}>
-            <strong>{coin.symbol}</strong> <span>{coin.name}</span>
-            <div style={{ fontSize: 23 }}>${coin.price.toLocaleString()}</div>
-            <div>{coin.change_24h >= 0 ? "▲" : "▼"} {Math.abs(coin.change_24h)}%</div>
-          </li>
-        ))}
-      </ul>
+    <div className="app">
+      <header>
+        <h1>Market Dashboard</h1>
+        <p className="muted">Top 50 cryptocurrencies by market cap</p>
+      </header>
+
+      {status === "loading" && <p className="muted">Loading prices…</p>}
+
+      {status === "error" && (
+        <p className="error">
+          Couldn't load prices. Check that the backend is running, or try again in a minute.
+        </p>
+      )}
+
+      {status === "ready" && (
+        <ul className="grid">
+          {coins.map((coin, index) => (
+            <CoinCard key={coin.id} coin={coin} rank={index + 1} />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
