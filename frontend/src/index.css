@@ -57,3 +57,73 @@ h1 {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+.grid {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card-name span {
+  color: var(--ink-2);
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.card-price {
+  margin: 12px 0 8px;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.delta {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.delta.up {
+  color: var(--up)
+}
+
+.delta.down {
+  color: var(--down)
+}
+
+.delta flat {
+  color: var(--muted)
+}
+
+.delta [aria-hiddn] {
+  font-size: 0.7em;
+  margin-right: 3px;
+}
