@@ -9,6 +9,7 @@ from .cache import TTLCache
 app = FastAPI()
 
 COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets"
+SPARKLINE_POINTS = 42  # CoinGecko sends ~168 hourly points; we thin them out
 
 coins_cache = TTLCache(ttl_seconds=60)
 
@@ -17,8 +18,20 @@ class Coin(BaseModel):
     id: str
     symbol: str
     name: str
+    image: str | None
     price: float | None
     change_24h: float | None
+    sparkline: list[float]
+
+
+def thin(values, max_points):
+    """Evenly pick at most max_points values, always keeping the last one."""
+    if len(values) <= max_points:
+        return values
+    step = len(values) / max_points
+    picked = [values[int(i * step)] for i in range(max_points)]
+    picked[-1] = values[-1]
+    return picked
 
 
 def get_with_retries(url, params, attempts=3):
@@ -52,18 +65,24 @@ def fetch_coins():
             "order": "market_cap_desc",
             "per_page": 50,
             "page": 1,
+            "sparkline": "true",
         },
     )
-    return [
-        Coin(
-            id=raw["id"],
-            symbol=raw["symbol"].upper(),
-            name=raw["name"],
-            price=raw.get("current_price"),
-            change_24h=raw.get("price_change_percentage_24h"),
+    coins = []
+    for raw in response.json():
+        week = (raw.get("sparkline_in_7d") or {}).get("price") or []
+        coins.append(
+            Coin(
+                id=raw["id"],
+                symbol=raw["symbol"].upper(),
+                name=raw["name"],
+                image=raw.get("image"),
+                price=raw.get("current_price"),
+                change_24h=raw.get("price_change_percentage_24h"),
+                sparkline=thin(week, SPARKLINE_POINTS),
+            )
         )
-        for raw in response.json()
-    ]
+    return coins
 
 
 @app.get("/api/health")

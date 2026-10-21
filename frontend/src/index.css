@@ -123,7 +123,7 @@ h1 {
   color: var(--muted)
 }
 
-.delta [aria-hiddn] {
+.delta [aria-hidden] {
   font-size: 0.7em;
   margin-right: 3px;
 }
