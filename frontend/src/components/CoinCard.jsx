@@ -1,4 +1,6 @@
 import { formatPercent, formatPrice } from "../format.js";
+import CoinIcon from "./CoinIcon.jsx"
+import Sparkline from "./Sparkline.jsx";
 
 export default function CoinCard({ coin, rank }) {
   const change = formatPercent(coin.change_24h);
@@ -8,6 +10,7 @@ export default function CoinCard({ coin, rank }) {
   return (
     <li className="card">
       <div className="card-top">
+        <CoinIcon coin={coin} />
         <div className="card-name">
           <strong>{coin.symbol}</strong>
           <span>{coin.name}</span>
@@ -17,7 +20,8 @@ export default function CoinCard({ coin, rank }) {
 
       <div className="card-price">{formatPrice(coin.price)}</div>
 
-      <div className={`delta ${direction}`}>
+      <div className="card-bottom">
+        <div className={`delta ${direction}`}>
         {change == null ? (
           "—"
         ) : (
@@ -27,6 +31,8 @@ export default function CoinCard({ coin, rank }) {
             {change}
           </>
         )}
+        </div>
+        <Sparkline values={coin.sparkline} />
       </div>
     </li>
   );
