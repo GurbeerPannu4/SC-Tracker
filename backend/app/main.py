@@ -1,17 +1,23 @@
 import time
+from typing import Literal
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Path, Query
 from pydantic import BaseModel
 
 from .cache import TTLCache
 
 app = FastAPI()
 
-COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets"
-SPARKLINE_POINTS = 42  # CoinGecko sends ~168 hourly points; we thin them out
+COINGECKO_BASE = "https://api.coingecko.com/api"
+COINGECKO_URL = f"{COINGECKO_BASE}/coins/markets"
+
+SPARKLINE_POINTS = 42
+CHART_MAX_POINTS = 300
+RANGES = {"1d": 1, "1w": 7, "1m": 20}
 
 coins_cache = TTLCache(ttl_seconds=60)
+chart_cache = TTLCache(ttl_seconds=300)
 
 
 class Coin(BaseModel):
@@ -22,8 +28,11 @@ class Coin(BaseModel):
     price: float | None
     change_24h: float | None
     sparkline: list[float]
-
-
+    
+class ChartPoint(BaseModel):
+    t: int
+    price: float
+    
 def thin(values, max_points):
     """Evenly pick at most max_points values, always keeping the last one."""
     if len(values) <= max_points:
@@ -84,7 +93,16 @@ def fetch_coins():
         )
     return coins
 
-
+def fetch_chart(coin_id, range_):
+    print(f"Fetching {range_} chart for {coin_id} from CoinGecko")
+    response = get_with_retries(
+        f"{COINGECKO_BASE}/coins/{coin_id}/market_chart",
+        params={"vs_currency": "usd", "days": RANGES[range_]},
+    )
+    prices = response.json().get("prices", [])
+    points = [ChartPoint(t=int(t), price=p) for t, p in prices if p is not None]
+    return thin(points, CHART_MAX_POINTS)
+    
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
@@ -110,3 +128,30 @@ def list_coins():
 
     coins_cache.set("coins", coins)
     return coins
+
+@app.get("/api/coins/{coin_id}/chart", response_model=list[ChartPoint])
+def coin_chart(
+    coin_id: str = Path(pattern=r"^[a-z0-9-]{1,64}$"),
+    range_: Literal["1d", "1w", "1m"] = Query("1d", alias="range"),
+):
+    key = (coin_id, range_)
+    cached = chart_cache.get(key)
+    if cached is not None:
+        return cached
+    
+    try:
+        points = fetch_chart(coin_id, range_)
+    except httpx.HTTPERROR as exc:
+        print(f"CoinGecko chart request failed: {exc!r}")
+        if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Unkown coin.")
+        stale = chart_cache.get_stale(key)
+        if stale is not None:
+            return stale
+        raise HTTPException(
+            status_code=503,
+            detail = "Market data is temporarily unavailable. Try again shortly",
+        )
+        
+        chart_cache.set(key, points)
+        return points
