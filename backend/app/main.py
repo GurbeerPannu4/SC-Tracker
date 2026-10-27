@@ -9,12 +9,12 @@ from .cache import TTLCache
 
 app = FastAPI()
 
-COINGECKO_BASE = "https://api.coingecko.com/api"
+COINGECKO_BASE = "https://api.coingecko.com/api/v3"
 COINGECKO_URL = f"{COINGECKO_BASE}/coins/markets"
 
 SPARKLINE_POINTS = 42
 CHART_MAX_POINTS = 300
-RANGES = {"1d": 1, "1w": 7, "1m": 20}
+RANGES = {"1d": 1, "1w": 7, "1m": 30}
 
 coins_cache = TTLCache(ttl_seconds=60)
 chart_cache = TTLCache(ttl_seconds=300)
@@ -153,5 +153,5 @@ def coin_chart(
             detail = "Market data is temporarily unavailable. Try again shortly",
         )
         
-        chart_cache.set(key, points)
-        return points
+    chart_cache.set(key, points)
+    return points
