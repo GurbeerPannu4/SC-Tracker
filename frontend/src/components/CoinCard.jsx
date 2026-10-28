@@ -10,7 +10,7 @@ export default function CoinCard({ coin, rank, onOpen}) {
       <button 
         className="card"
         onClick={() => onOpen(coin.id)}
-        aria-label={`${coin.name}, open char`}
+        aria-label={`${coin.name}, open chart`}
       >
         <div className="card-top">
           <CoinIcon coin={coin} />
@@ -25,7 +25,7 @@ export default function CoinCard({ coin, rank, onOpen}) {
 
         <div className="card-bottom">
           <Delta value={coin.change_24h} />
-          <Sparkline values={coin.Sparkline} />
+          <Sparkline values={coin.sparkline} />
         </div>
       </button>
     </li>
