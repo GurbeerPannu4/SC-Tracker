@@ -10,7 +10,7 @@ export default function CoinCard({ coin, rank, onOpen}) {
       <button 
         className="card"
         onClick={() => onOpen(coin.id)}
-        aria-label={`${coin.name}, open chart`}
+        aria-label={`${coin.name}, open char`}
       >
         <div className="card-top">
           <CoinIcon coin={coin} />
