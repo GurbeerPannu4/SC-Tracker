@@ -144,7 +144,7 @@ def coin_chart(
     except httpx.HTTPError as exc:
         print(f"CoinGecko chart request failed: {exc!r}")
         if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Unkown coin.")
+            raise HTTPException(status_code=404, detail="Unknown coin.")
         stale = chart_cache.get_stale(key)
         if stale is not None:
             return stale
