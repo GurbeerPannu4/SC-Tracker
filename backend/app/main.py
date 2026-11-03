@@ -141,7 +141,7 @@ def coin_chart(
     
     try:
         points = fetch_chart(coin_id, range_)
-    except httpx.HTTPERROR as exc:
+    except httpx.HTTPError as exc:
         print(f"CoinGecko chart request failed: {exc!r}")
         if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 404:
             raise HTTPException(status_code=404, detail="Unkown coin.")

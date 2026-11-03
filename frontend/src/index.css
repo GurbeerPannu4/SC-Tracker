@@ -160,3 +160,232 @@ h1 {
   color: var(--ink-2);
   font-weight: 600;
 }
+
+:root {
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --backdrop: rgba(11, 11, 11, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --backdrop: rgba(0, 0, 0, 0.6);
+  }
+}
+
+button.card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+button.card:hover {
+  border-color: var(--series-1);
+  transform: translateY(-1px);
+}
+
+:focus-visible {
+  outline: 2px solid var(--series-1);
+  outline-offset: 2px;
+}
+
+.center {
+  text-align: center;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--backdrop);
+  z-index: 10;
+}
+
+.dialog {
+  width: min(860px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialog-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.close {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--hover);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin: 18px 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  color: var(--ink-2);
+  font-size: 0.85rem;
+}
+
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.stat-value .delta {
+  font-size: inherit;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.segmented {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.segmented button {
+  padding: 8px 14px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.segmented button:hover {
+  background: var(--hover);
+}
+
+.segmented button.active {
+  background: var(--series-1);
+  color: #fff;
+}
+
+.btn {
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.plot {
+  height: 340px;
+  display: grid;
+}
+
+.plot > .center {
+  align-self: center;
+}
+
+.tooltip {
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.tooltip-time {
+  color: var(--ink-2);
+  font-size: 0.8rem;
+}
+
+.tooltip-price {
+  font-weight: 600;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--grid);
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+  .dialog {
+    padding: 14px;
+  }
+
+  .plot {
+    height: 280px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.card {
+    transition: none;
+  }
+}
