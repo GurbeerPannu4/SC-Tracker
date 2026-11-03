@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import CoinCard from "./components/CoinCard.jsx";
+import CoinModal from "./components/CoinModal.jsx";
 
 export default function App() {
   const [coins, setCoins] = useState([]);
   const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
+  const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
     fetch("/api/coins")
@@ -17,6 +19,9 @@ export default function App() {
       })
       .catch(() => setStatus("error"));
   }, []);
+
+  const selected = coins.find((coin) => coin.id === selectedId) ?? null;
+  const closeModal = useCallback(() => setSelectedId(null), []);
 
   return (
     <div className="app">
@@ -36,10 +41,12 @@ export default function App() {
       {status === "ready" && (
         <ul className="grid">
           {coins.map((coin, index) => (
-            <CoinCard key={coin.id} coin={coin} rank={index + 1} />
+            <CoinCard key={coin.id} coin={coin} rank={index + 1} onOpen={setSelectedId} />
           ))}
         </ul>
       )}
+
+      {selected && <CoinModal coin={selected} onClose={closeModal} />}
     </div>
   );
 }
