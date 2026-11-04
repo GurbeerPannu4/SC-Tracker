@@ -32,7 +32,7 @@ export function formatAxisPrice(price) {
     return formatPrice(price).replace("$", "");
 }
 
-export function formatTime(ms, ramge) {
+export function formatTime(ms, range) {
     const date = new Date(ms)
     return range === "1d"
       ? date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit"})

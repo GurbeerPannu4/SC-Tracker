@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import CoinCard from "./components/CoinCard.jsx";
 import CoinModal from "./components/CoinModal.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 
 export default function App() {
   const [coins, setCoins] = useState([]);
@@ -46,7 +47,11 @@ export default function App() {
         </ul>
       )}
 
-      {selected && <CoinModal coin={selected} onClose={closeModal} />}
+      {selected && (
+        <ErrorBoundary key={selected.id} onClose={closeModal}>
+          <CoinModal coin={selected} onClose={closeModal} />
+        </ErrorBoundary>
+      )}
     </div>
   );
 }
