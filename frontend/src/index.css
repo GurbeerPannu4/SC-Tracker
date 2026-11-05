@@ -389,3 +389,48 @@ th {
     transition: none;
   }
 }
+
+/* ---------- search and sort ---------- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.search {
+  flex: 1 1 240px;
+  max-width: 420px;
+  padding: 9px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+}
+
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort select {
+  padding: 9px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+}
+
+.count {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+}
+
+.toolbar + .count + .grid {
+  margin-top: 12px;
+}
