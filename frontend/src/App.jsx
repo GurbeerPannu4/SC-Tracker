@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CoinCard from "./components/CoinCard.jsx";
 import CoinModal from "./components/CoinModal.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
+
+const REFRESH_MS = 60_000; // matches the backend cache, so asking more often gains nothing
 
 const SORTS = {
   rank: { label: "Market cap", compare: null }, // the order the API already gives us
@@ -17,19 +19,47 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState("rank");
+  const [updatedAt, setUpdatedAt] = useState(null);
+  const [refreshFailed, setRefreshFailed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const inFlight = useRef(false);
 
-  useEffect(() => {
-    fetch("/api/coins")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        setCoins(data);
-        setStatus("ready");
-      })
-      .catch(() => setStatus("error"));
+  // Fetch the coin list. On a failed refresh we keep showing the old data.
+  const loadCoins = useCallback(async () => {
+    if (inFlight.current) return; // never run two requests at once
+    inFlight.current = true;
+    setRefreshing(true);
+    try {
+      const res = await fetch("/api/coins");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setCoins(await res.json());
+      setStatus("ready");
+      setUpdatedAt(new Date());
+      setRefreshFailed(false);
+    } catch {
+      setRefreshFailed(true);
+      setStatus((current) => (current === "loading" ? "error" : current));
+    } finally {
+      inFlight.current = false;
+      setRefreshing(false);
+    }
   }, []);
+
+  // Load once, then every minute. Skip while the tab is hidden; catch up when it comes back.
+  useEffect(() => {
+    loadCoins();
+    const timer = setInterval(() => {
+      if (!document.hidden) loadCoins();
+    }, REFRESH_MS);
+    const onVisible = () => {
+      if (!document.hidden) loadCoins();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [loadCoins]);
 
   // Filter, then sort. Each coin keeps its market-cap rank no matter how the list is shown.
   const visible = useMemo(() => {
@@ -86,9 +116,19 @@ export default function App() {
             </label>
           </div>
 
-          <p className="muted count" aria-live="polite">
-            Showing {visible.length} of {coins.length}
-          </p>
+          <div className="status-row">
+            <p className="muted count" aria-live="polite">
+              Showing {visible.length} of {coins.length}
+            </p>
+            <p className={`updated ${refreshFailed ? "error" : "muted"}`}>
+              {refreshFailed
+                ? `Couldn't refresh. Showing prices from ${updatedAt?.toLocaleTimeString()}.`
+                : `Updated ${updatedAt?.toLocaleTimeString()} · refreshes every minute`}
+              <button className="btn small" onClick={loadCoins} disabled={refreshing}>
+                {refreshing ? "Refreshing…" : "Refresh now"}
+              </button>
+            </p>
+          </div>
 
           {visible.length === 0 ? (
             <p className="muted">No coins match “{query.trim()}”.</p>

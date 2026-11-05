@@ -434,3 +434,40 @@ th {
 .toolbar + .count + .grid {
   margin-top: 12px;
 }
+
+/* ---------- auto-refresh status ---------- */
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+.status-row .count {
+  margin: 0;
+}
+
+.updated {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.btn.small {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.status-row + .grid {
+  margin-top: 12px;
+}
