@@ -471,3 +471,7 @@ th {
 .status-row + .grid {
   margin-top: 12px;
 }
+
+header .segmented {
+  margin-top: 14px;
+}
