@@ -1,70 +1,44 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import CoinCard from "./components/CoinCard.jsx";
 import CoinModal from "./components/CoinModal.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import useMarketData from "./useMarketData.js";
 
-const REFRESH_MS = 60_000; // matches the backend cache, so asking more often gains nothing
+const TABS = {
+  crypto: { label: "Crypto", subtitle: "Top 50 cryptocurrencies by market cap" },
+  stocks: { label: "Stocks", subtitle: "30 large US companies · change is since the previous close" },
+};
 
 const SORTS = {
-  rank: { label: "Market cap", compare: null }, // the order the API already gives us
+  rank: { label: "Default order", compare: null }, // the order the API already gives us
   price: { label: "Price: high to low", compare: (a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity) },
-  gainers: { label: "24h change: best first", compare: (a, b) => (b.change_24h ?? -Infinity) - (a.change_24h ?? -Infinity) },
-  losers: { label: "24h change: worst first", compare: (a, b) => (a.change_24h ?? Infinity) - (b.change_24h ?? Infinity) },
+  gainers: { label: "Change: best first", compare: (a, b) => (b.change_24h ?? -Infinity) - (a.change_24h ?? -Infinity) },
+  losers: { label: "Change: worst first", compare: (a, b) => (a.change_24h ?? Infinity) - (b.change_24h ?? Infinity) },
   name: { label: "Name: A to Z", compare: (a, b) => a.name.localeCompare(b.name) },
 };
 
 export default function App() {
-  const [coins, setCoins] = useState([]);
-  const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
+  const [tab, setTab] = useState("crypto"); // "crypto" | "stocks"
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState("rank");
-  const [updatedAt, setUpdatedAt] = useState(null);
-  const [refreshFailed, setRefreshFailed] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const inFlight = useRef(false);
 
-  // Fetch the coin list. On a failed refresh we keep showing the old data.
-  const loadCoins = useCallback(async () => {
-    if (inFlight.current) return; // never run two requests at once
-    inFlight.current = true;
-    setRefreshing(true);
-    try {
-      const res = await fetch("/api/coins");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setCoins(await res.json());
-      setStatus("ready");
-      setUpdatedAt(new Date());
-      setRefreshFailed(false);
-    } catch {
-      setRefreshFailed(true);
-      setStatus((current) => (current === "loading" ? "error" : current));
-    } finally {
-      inFlight.current = false;
-      setRefreshing(false);
-    }
-  }, []);
+  // Both lists live here, but only the visible tab fetches and refreshes.
+  const crypto = useMarketData("/api/coins", tab === "crypto");
+  const stocks = useMarketData("/api/stocks", tab === "stocks");
+  const market = tab === "crypto" ? crypto : stocks;
+  const { items, status } = market;
 
-  // Load once, then every minute. Skip while the tab is hidden; catch up when it comes back.
-  useEffect(() => {
-    loadCoins();
-    const timer = setInterval(() => {
-      if (!document.hidden) loadCoins();
-    }, REFRESH_MS);
-    const onVisible = () => {
-      if (!document.hidden) loadCoins();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [loadCoins]);
+  function switchTab(next) {
+    setTab(next);
+    setSelectedId(null);
+    setQuery("");
+  }
 
-  // Filter, then sort. Each coin keeps its market-cap rank no matter how the list is shown.
+  // Filter, then sort. Each item keeps its original position no matter how the list is shown.
   const visible = useMemo(() => {
     const text = query.trim().toLowerCase();
-    const ranked = coins.map((coin, index) => ({ coin, rank: index + 1 }));
+    const ranked = items.map((coin, index) => ({ coin, rank: index + 1 }));
     const matches = text
       ? ranked.filter(
           ({ coin }) =>
@@ -73,23 +47,39 @@ export default function App() {
       : ranked;
     const compare = SORTS[sortKey].compare;
     return compare ? [...matches].sort((a, b) => compare(a.coin, b.coin)) : matches;
-  }, [coins, query, sortKey]);
+  }, [items, query, sortKey]);
 
-  const selected = coins.find((coin) => coin.id === selectedId) ?? null;
+  const selected = tab === "crypto" ? crypto.items.find((coin) => coin.id === selectedId) ?? null : null;
   const closeModal = useCallback(() => setSelectedId(null), []);
 
   return (
     <div className="app">
       <header>
         <h1>Market Dashboard</h1>
-        <p className="muted">Top 50 cryptocurrencies by market cap</p>
+        <p className="muted">{TABS[tab].subtitle}</p>
+        <div className="segmented" role="group" aria-label="Market">
+          {Object.entries(TABS).map(([key, { label }]) => (
+            <button
+              key={key}
+              className={key === tab ? "active" : ""}
+              aria-pressed={key === tab}
+              onClick={() => switchTab(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </header>
 
       {status === "loading" && <p className="muted">Loading prices…</p>}
 
       {status === "error" && (
         <p className="error">
-          Couldn't load prices. Check that the backend is running, or try again in a minute.
+          Couldn't load prices.{" "}
+          {market.errorDetail || "Check that the backend is running, or try again in a minute."}{" "}
+          <button className="btn small" onClick={market.reload} disabled={market.refreshing}>
+            Try again
+          </button>
         </p>
       )}
 
@@ -100,7 +90,7 @@ export default function App() {
               type="search"
               className="search"
               placeholder="Search name or symbol"
-              aria-label="Search coins"
+              aria-label="Search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -118,24 +108,29 @@ export default function App() {
 
           <div className="status-row">
             <p className="muted count" aria-live="polite">
-              Showing {visible.length} of {coins.length}
+              Showing {visible.length} of {items.length}
             </p>
-            <p className={`updated ${refreshFailed ? "error" : "muted"}`}>
-              {refreshFailed
-                ? `Couldn't refresh. Showing prices from ${updatedAt?.toLocaleTimeString()}.`
-                : `Updated ${updatedAt?.toLocaleTimeString()} · refreshes every minute`}
-              <button className="btn small" onClick={loadCoins} disabled={refreshing}>
-                {refreshing ? "Refreshing…" : "Refresh now"}
+            <p className={`updated ${market.refreshFailed ? "error" : "muted"}`}>
+              {market.refreshFailed
+                ? `Couldn't refresh. Showing prices from ${market.updatedAt?.toLocaleTimeString()}.`
+                : `Updated ${market.updatedAt?.toLocaleTimeString()} · refreshes every minute`}
+              <button className="btn small" onClick={market.reload} disabled={market.refreshing}>
+                {market.refreshing ? "Refreshing…" : "Refresh now"}
               </button>
             </p>
           </div>
 
           {visible.length === 0 ? (
-            <p className="muted">No coins match “{query.trim()}”.</p>
+            <p className="muted">No matches for “{query.trim()}”.</p>
           ) : (
             <ul className="grid">
               {visible.map(({ coin, rank }) => (
-                <CoinCard key={coin.id} coin={coin} rank={rank} onOpen={setSelectedId} />
+                <CoinCard
+                  key={coin.id}
+                  coin={coin}
+                  rank={tab === "crypto" ? rank : undefined}
+                  onOpen={tab === "crypto" ? setSelectedId : undefined}
+                />
               ))}
             </ul>
           )}
