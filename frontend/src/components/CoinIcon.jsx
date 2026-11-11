@@ -10,7 +10,7 @@ export default function CoinIcon({coin, size = 32}) {
             style={{ width: size, height: size }}
             aria-hidden="true"
             >
-                {coin.symbol.slize(0, 1)}
+                {coin.symbol.slice(0, 1)}
             </span>
         );
     }

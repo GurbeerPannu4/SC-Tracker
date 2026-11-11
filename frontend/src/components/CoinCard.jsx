@@ -19,7 +19,7 @@ export default function CoinCard({ coin, rank, onOpen }) {
 
       <div className="card-bottom">
         <Delta value={coin.change_24h} />
-        <Sparkline values={coin.sparkline} />
+        {coin.sparkline.length > 1 && <Sparkline values={coin.sparkline} />}
       </div>
     </>
   );
